@@ -19,8 +19,13 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to initialize logger: %v", err)
 	}
+	err = global.InitDB()
+	if err != nil {
+		global.Log.Fatal("Failed to initialize DB", zap.Error(err))
+	}
+	global.Log.Info("database connected")
 	initRouter := router.InitRouter()
-	global.Log.Info("server started", zap.Int("port", global.Conf.Server.Port))
+	global.Log.Info("server starting", zap.Int("port", global.Conf.Server.Port))
 	if err := initRouter.Run(fmt.Sprintf(":%d", global.Conf.Server.Port)); err != nil {
 		global.Log.Fatal("server failed to start", zap.Error(err))
 	}

@@ -1,2 +1,10 @@
 server:
-  port: 8081
+  port: 8080
+
+database:
+  host: localhost
+  port: 5433
+  user: web3
+  password: web3pass
+  dbname: web3wallet
+  sslmode: disable
