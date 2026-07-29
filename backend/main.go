@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"web3-wallet-exchange/global"
+	"web3-wallet-exchange/model"
 	"web3-wallet-exchange/router"
 
 	"go.uber.org/zap"
@@ -22,6 +23,10 @@ func main() {
 	err = global.InitDB()
 	if err != nil {
 		global.Log.Fatal("Failed to initialize DB", zap.Error(err))
+	}
+	err = model.AutoMigrateUser()
+	if err != nil {
+		global.Log.Fatal("auto migrate failed", zap.Error(err))
 	}
 	global.Log.Info("database connected")
 	initRouter := router.InitRouter()
