@@ -1,11 +1,20 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import { WagmiProvider } from 'wagmi'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { config } from './wagmi.ts'
 import App from './App.tsx'
 
-// 入口：把 <App/> 挂到 index.html 里的 <div id="root">。
-// 类比 Java：像 main() 里把 DispatcherServlet 装到容器上——整个 UI 的启动点。
+// wagmi 需要两层 Provider 包住整个应用：
+// WagmiProvider 提供钱包配置；QueryClientProvider 是 wagmi 内部用来管异步状态的（react-query）。
+const queryClient = new QueryClient()
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    <WagmiProvider config={config}>
+      <QueryClientProvider client={queryClient}>
+        <App />
+      </QueryClientProvider>
+    </WagmiProvider>
   </StrictMode>,
 )

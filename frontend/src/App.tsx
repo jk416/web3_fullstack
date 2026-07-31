@@ -1,46 +1,79 @@
-import {useEffect, useState} from 'react'
+import { useState } from 'react'
+import { useAccount, useConnect, useDisconnect, useSignMessage } from 'wagmi'
+import { buildLoginMessage, getNonce, login, getMe } from './api'
 
-// App 是一个组件：一个"返回 UI 的函数"。
-
-// 类比后端：把它想成一个纯函数——输入 state/props，输出该渲染成什么样。
 function App() {
-    // useState：组件的"记忆"。status 是当前值，setStatus 是改它的唯一入口。
-    // 一旦 setStatus 被调用，React 会重新执行 App() 并刷新界面。
-    // 类比：像一个被监听的字段，赋值会自动触发"重绘"。
-    const [status, setStatus] = useState<string>('loading...')
-    const [msg, setMsg] = useState<string>('')
+  // useAccount：当前连接的钱包信息。address 就是【钱包给出的地址】，不是用户打字输入的。
+  const { address, isConnected } = useAccount()
+  // useConnect：连接钱包；connectors[0] 就是我们在 wagmi.ts 配的 injected(MetaMask)。
+  const { connect, connectors, isPending: isConnecting } = useConnect()
+  const { disconnect } = useDisconnect()
+  // useSignMessage：让钱包对一段消息签名（私钥全程留在 MetaMask，前端拿不到）。
+  const { signMessageAsync } = useSignMessage()
 
-    function checkHealth() {
-        fetch('/api/health')
-            .then((res) => res.json())
-            .then((data) => {
-                setStatus(data.status)
-                setMsg('✔ 检查成功')
-                setTimeout(() => setMsg(''), 2000)
-            })
-            .catch(() => {
-                setStatus('backend unreachable')
-                setMsg('✘ 后端不可达')
-                setTimeout(() => setMsg(''), 2000)
-            })
+  const [token, setToken] = useState('')
+  const [me, setMe] = useState('')
+  const [status, setStatus] = useState('')
+
+  // 登录核心流程 —— 这几行是这一关要你看懂的重点：
+  async function handleLogin() {
+    if (!address) return
+    try {
+      setStatus('requesting nonce...')
+      const nonce = await getNonce(address)                 // ① 用地址拿 nonce
+      setStatus('please sign in your wallet...')
+      const message = buildLoginMessage(nonce)              // ② 组装消息（和后端契约一致）
+      const signature = await signMessageAsync({ message }) // ③ 钱包弹窗签名 → 得到 signature
+      setStatus('logging in...')
+      const jwt = await login(address, signature)           // ④ {地址,签名} 换 JWT
+      setToken(jwt)
+      localStorage.setItem('token', jwt)                    // 存起来，后续请求带上
+      setStatus('logged in ✅')
+    } catch (e) {
+      setStatus('login failed: ' + (e as Error).message)
     }
+  }
 
-    // useEffect(fn, [])：空依赖数组 = 只在组件首次挂载后跑一次。
-    // 类比：像生命周期回调 onMounted / @PostConstruct——初始化时做副作用（这里是发请求）。
-    useEffect(() => {
-        checkHealth()
-    }, [])
+  async function handleMe() {
+    try {
+      const data = await getMe(token)
+      setMe(JSON.stringify(data))
+    } catch (e) {
+      setMe('error: ' + (e as Error).message)
+    }
+  }
 
-    return (
-        <div style={{fontFamily: 'sans-serif', padding: 40}}>
-            <h1>Web3 Wallet Exchange</h1>
-            <p>
-                Backend health: <strong>{status}</strong>
-            </p>
-            <button onClick={checkHealth}>重新检查</button>
-            {msg && <p style={{color: msg.startsWith('✔') ? 'green' : 'red'}}>{msg}</p>}
-        </div>
-    )
+  return (
+    <div style={{ fontFamily: 'sans-serif', padding: 40, lineHeight: 1.8 }}>
+      <h1>Web3 Wallet Exchange</h1>
+
+      {!isConnected ? (
+        // 没连钱包：只有一个"连接钱包"按钮，点了 MetaMask 会弹窗
+        <button onClick={() => connect({ connector: connectors[0] })} disabled={isConnecting}>
+          {isConnecting ? 'Connecting…' : 'Connect Wallet'}
+        </button>
+      ) : (
+        <>
+          <p>
+            Connected: <code>{address}</code>
+          </p>
+          <button onClick={handleLogin}>Sign in</button>{' '}
+          <button onClick={() => disconnect()}>Disconnect</button>
+          <p>Status: {status}</p>
+
+          {token && (
+            <>
+              <p>
+                JWT: <code>{token.slice(0, 40)}...</code>
+              </p>
+              <button onClick={handleMe}>Call /api/me (带 token)</button>
+              {me && <p>/api/me → {me}</p>}
+            </>
+          )}
+        </>
+      )}
+    </div>
+  )
 }
 
 export default App
