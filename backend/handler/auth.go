@@ -1,11 +1,13 @@
 package handler
 
 import (
+	"errors"
 	"web3-wallet-exchange/global"
 	"web3-wallet-exchange/service"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 type LoginRequest struct {
@@ -25,10 +27,11 @@ func GetNonce(c *gin.Context) {
 	}
 	nonce, err := service.GenerateNonce(addr)
 	if err != nil {
-		c.JSON(400, gin.H{"error": err.Error()})
-	} else {
-		c.JSON(200, gin.H{"nonce": nonce})
+		global.Log.Error("generate nonce failed", zap.Error(err))
+		c.JSON(500, gin.H{"error": "internal server error"})
+		return
 	}
+	c.JSON(200, gin.H{"nonce": nonce})
 }
 
 func Login(c *gin.Context) {
@@ -43,7 +46,15 @@ func Login(c *gin.Context) {
 	}
 	userID, err := service.VerifyLogin(req.Address, req.Signature)
 	if err != nil {
-		c.JSON(401, gin.H{"error": err.Error()})
+		switch {
+		case errors.Is(err, service.ErrInvalidSignature):
+			c.JSON(401, gin.H{"error": err.Error()})
+		case errors.Is(err, service.ErrUserNotFound):
+			c.JSON(400, gin.H{"error": err.Error()})
+		default: // 未知 = 系统错：记日志，不把细节泄给客户端
+			global.Log.Error("login failed", zap.Error(err))
+			c.JSON(500, gin.H{"error": "internal server error"})
+		}
 		return
 	}
 	tokenStr, err := global.Token.CreateToken(userID)
