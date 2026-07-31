@@ -30,20 +30,20 @@ func GenerateNonce(walletAddress string) (string, error) {
 	return nonce, nil
 }
 
-func VerifyLogin(walletAddress, signature string) error {
+func VerifyLogin(walletAddress, signature string) (uint, error) {
 	addr := strings.ToLower(walletAddress)
 	var user model.User
 	result := global.DB.Where(&model.User{WalletAddress: addr}).First(&user)
 	if result.Error != nil {
-		return result.Error
+		return 0, result.Error
 	}
 	msg := "Sign in to Web3 Wallet Exchange.\n\nNonce: " + user.Nonce
 	sig := common.FromHex(signature)
 	if sig == nil {
-		return errors.New("invalid signature")
+		return 0, errors.New("invalid signature")
 	}
 	if len(sig) != 65 {
-		return errors.New("invalid signature")
+		return 0, errors.New("invalid signature")
 	}
 	if sig[64] >= 27 {
 		sig[64] -= 27
@@ -51,16 +51,16 @@ func VerifyLogin(walletAddress, signature string) error {
 	hash := accounts.TextHash([]byte(msg))
 	pubKey, err := crypto.SigToPub(hash, sig) // "github.com/ethereum/go-ethereum/crypto"
 	if err != nil {
-		return err
+		return 0, err
 	}
 	recovered := crypto.PubkeyToAddress(*pubKey)
 	if strings.ToLower(recovered.Hex()) != addr {
-		return errors.New("invalid signature")
+		return 0, errors.New("invalid signature")
 	}
 	_, err = GenerateNonce(addr)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
-	return nil
+	return user.ID, nil
 }

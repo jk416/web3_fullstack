@@ -8,3 +8,7 @@ database:
   password: web3pass
   dbname: web3wallet
   sslmode: disable
+
+jwt:
+  secret: "dev-secret-change-me-in-prod"
+  expire_hours: 24

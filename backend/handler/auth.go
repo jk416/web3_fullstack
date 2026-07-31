@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"web3-wallet-exchange/global"
 	"web3-wallet-exchange/service"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -40,9 +41,24 @@ func Login(c *gin.Context) {
 		c.JSON(400, gin.H{"error": "Invalid address"})
 		return
 	}
-	if err := service.VerifyLogin(req.Address, req.Signature); err != nil {
+	userID, err := service.VerifyLogin(req.Address, req.Signature)
+	if err != nil {
 		c.JSON(401, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(200, gin.H{"message": "Login successful"})
+	tokenStr, err := global.Token.CreateToken(userID)
+	if err != nil {
+		c.JSON(500, gin.H{"error": "failed to create token"})
+		return
+	}
+	c.JSON(200, gin.H{"token": tokenStr})
+}
+
+func Me(c *gin.Context) {
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(401, gin.H{"error": "userID not found"})
+		return
+	}
+	c.JSON(200, gin.H{"userID": userID})
 }

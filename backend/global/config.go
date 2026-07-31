@@ -12,6 +12,13 @@ import (
 type Config struct {
 	Server   ServerConfig   `mapstructure:"server"`
 	Database DatabaseConfig `mapstructure:"database"`
+	JWT      JWTConfig      `mapstructure:"jwt"`
+}
+
+// JWTConfig 对应 yaml 里的 jwt 段。secret 生产应走环境变量 JWT_SECRET 覆盖。
+type JWTConfig struct {
+	Secret      string `mapstructure:"secret"`
+	ExpireHours int    `mapstructure:"expire_hours"`
 }
 
 // ServerConfig 对应 yaml 里的 server 段。

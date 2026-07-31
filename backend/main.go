@@ -24,6 +24,7 @@ func main() {
 	if err != nil {
 		global.Log.Fatal("Failed to initialize DB", zap.Error(err))
 	}
+	global.InitToken()
 	err = model.AutoMigrateUser()
 	if err != nil {
 		global.Log.Fatal("auto migrate failed", zap.Error(err))
