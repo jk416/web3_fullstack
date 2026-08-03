@@ -36,3 +36,18 @@ export async function getMe(token: string) {
   if (!res.ok) throw new Error(`unauthorized (${res.status})`)
   return res.json()
 }
+
+// ⑤ 登录后取托管充值地址（JWT 鉴权；无则服务端创建）
+// 响应字段与后端一致：{ "address": "0x..." } —— 这是充值地址，不是 MetaMask 登录地址
+export async function getWallet(token: string): Promise<string> {
+  const res = await fetch('/api/wallet', {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.error ?? `get wallet failed (${res.status})`)
+  }
+  const data = await res.json()
+  if (!data.address) throw new Error('wallet response missing address')
+  return data.address as string
+}

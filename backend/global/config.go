@@ -13,6 +13,7 @@ type Config struct {
 	Server   ServerConfig   `mapstructure:"server"`
 	Database DatabaseConfig `mapstructure:"database"`
 	JWT      JWTConfig      `mapstructure:"jwt"`
+	Wallet   WalletConfig   `mapstructure:"wallet"`
 }
 
 // JWTConfig 对应 yaml 里的 jwt 段。secret 生产应走环境变量 JWT_SECRET 覆盖。
@@ -34,6 +35,10 @@ type DatabaseConfig struct {
 	Password string `mapstructure:"password"`
 	DBName   string `mapstructure:"dbname"`
 	SSLMode  string `mapstructure:"sslmode"`
+}
+
+type WalletConfig struct {
+	EncryptionKey string `mapstructure:"encryption_key"`
 }
 
 // Conf 是全局唯一的配置实例：程序启动时由 LoadConfig 填充一次，之后各处只读。
