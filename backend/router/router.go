@@ -14,6 +14,7 @@ func InitRouter() *gin.Engine {
 	auth.POST("/login", handler.Login)
 	authed := r.Group("/api", middleware.JWTAuth())
 	authed.GET("/me", handler.Me)
+	authed.GET("/wallet", handler.GetWallet)
 	r.GET("/api/health", handler.Health)
 	return r
 }

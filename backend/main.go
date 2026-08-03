@@ -29,6 +29,10 @@ func main() {
 	if err != nil {
 		global.Log.Fatal("auto migrate failed", zap.Error(err))
 	}
+	err = model.AutoMigrateWallet()
+	if err != nil {
+		global.Log.Fatal("auto migrate failed", zap.Error(err))
+	}
 	global.Log.Info("database connected")
 	initRouter := router.InitRouter()
 	global.Log.Info("server starting", zap.Int("port", global.Conf.Server.Port))

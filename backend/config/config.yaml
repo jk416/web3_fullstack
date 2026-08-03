@@ -12,3 +12,6 @@ database:
 jwt:
   secret: "dev-secret-change-me-in-prod"
   expire_hours: 24
+
+wallet:
+  encryption_key: "0123456789abcdef0123456789abcdef"
