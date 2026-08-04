@@ -15,3 +15,15 @@ jwt:
 
 wallet:
   encryption_key: "0123456789abcdef0123456789abcdef"
+
+
+ethereum:
+  # Sepolia HTTP RPC。免费：publicnode / 自己 Alchemy·Infura 等
+  # 也可用环境变量 ETHEREUM_RPC_URL 覆盖
+  rpc_url: "https://ethereum-sepolia-rpc.publicnode.com"
+  # 后面确认入账用；本关先读进配置即可
+  confirmations: 3
+  # 首次无 checkpoint 时从哪个块开始扫；0 表示用「当前头 - 20」避免从创世扫
+  start_block: 0
+  # 轮询间隔秒
+  scan_interval_sec: 5

@@ -14,6 +14,7 @@ type Config struct {
 	Database DatabaseConfig `mapstructure:"database"`
 	JWT      JWTConfig      `mapstructure:"jwt"`
 	Wallet   WalletConfig   `mapstructure:"wallet"`
+	Ethereum EthereumConfig `mapstructure:"ethereum"`
 }
 
 // JWTConfig 对应 yaml 里的 jwt 段。secret 生产应走环境变量 JWT_SECRET 覆盖。
@@ -39,6 +40,13 @@ type DatabaseConfig struct {
 
 type WalletConfig struct {
 	EncryptionKey string `mapstructure:"encryption_key"`
+}
+
+type EthereumConfig struct {
+	RPCURL          string `mapstructure:"rpc_url"`
+	Confirmations   int    `mapstructure:"confirmations"`
+	StartBlock      uint64 `mapstructure:"start_block"`
+	ScanIntervalSec int    `mapstructure:"scan_interval_sec"`
 }
 
 // Conf 是全局唯一的配置实例：程序启动时由 LoadConfig 填充一次，之后各处只读。
