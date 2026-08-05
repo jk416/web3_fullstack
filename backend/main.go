@@ -53,6 +53,8 @@ func main() {
 	defer cancel()
 	go service.RunScanner(ctx)
 
+	go service.RunConfirmScanner(ctx)
+
 	global.Log.Info("database connected")
 	r := router.InitRouter()
 	global.Log.Info("server starting", zap.Int("port", global.Conf.Server.Port))
