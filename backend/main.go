@@ -4,6 +4,12 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"sync"
+	"syscall"
+	"time"
 	"web3-wallet-exchange/global"
 	"web3-wallet-exchange/model"
 	"web3-wallet-exchange/router"
@@ -51,14 +57,47 @@ func main() {
 	// 后台扫链（阶段 3.5 再接 SIGINT 优雅退出）
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	go service.RunScanner(ctx)
-
-	go service.RunConfirmScanner(ctx)
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		service.RunScanner(ctx)
+	}()
+	go func() {
+		defer wg.Done()
+		service.RunConfirmScanner(ctx)
+	}()
 
 	global.Log.Info("database connected")
 	r := router.InitRouter()
 	global.Log.Info("server starting", zap.Int("port", global.Conf.Server.Port))
-	if err := r.Run(fmt.Sprintf(":%d", global.Conf.Server.Port)); err != nil {
-		global.Log.Fatal("server failed to start", zap.Error(err))
+
+	srv := &http.Server{
+		Addr:    fmt.Sprintf(":%d", global.Conf.Server.Port),
+		Handler: r, // InitRouter() 返回的 engine
 	}
+
+	go func() {
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			global.Log.Fatal("server failed", zap.Error(err))
+		}
+	}()
+
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
+	<-signals
+	global.Log.Info("Shutdown signal received, exiting...")
+	cancel()
+
+	// 给 HTTP 一个关机超时（如 10s）
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer shutdownCancel()
+	_ = srv.Shutdown(shutdownCtx) // 等进行中的请求结束（有限时）
+
+	global.Log.Info("server shutdown")
+
+	// 信号后 cancel + Shutdown HTTP 之后：
+	wg.Wait() // 或带超时的 wait（select + time.After），教学用 Wait 即可
+	global.Log.Info("bye")
+
 }

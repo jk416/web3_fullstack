@@ -12,6 +12,11 @@ import (
 
 // ctx 取消后退出（main 里 defer cancel；阶段 3.5 再接信号优雅退出）。
 func RunConfirmScanner(ctx context.Context) {
+	defer func() {
+		if r := recover(); r != nil {
+			global.Log.Error("panic", zap.Any("error", r))
+		}
+	}()
 	sec := global.Conf.Ethereum.ScanIntervalSec
 	if sec <= 0 {
 		sec = 5
